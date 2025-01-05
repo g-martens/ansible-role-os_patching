@@ -32,6 +32,13 @@
       ansible.builtin.reboot:
         reboot_timeout: 600
 
+    - name: Post server has rebooted to Slack
+      slack:
+        token: "{{ slack_token }}"
+        msg: "{{ ansible_hostname  }} has been rebooted"
+      delegate_to: localhost
+      when: slack_token is defined
+
     - name: Wait for the server to come back online
       ansible.builtin.wait_for_connection:
         timeout: 300
