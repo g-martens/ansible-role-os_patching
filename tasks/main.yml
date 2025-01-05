@@ -1,0 +1,10 @@
+---
+# tasks file for patching
+
+- name: Update Redhat based servers
+  import_tasks: redhat.yml
+  when: ansible_os_family == 'RedHat'
+
+- name: Update Debian based servers
+  import_tasks: debian.yml
+  when: ansible_os_family == 'Debian'

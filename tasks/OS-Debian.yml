@@ -1,0 +1,39 @@
+---
+- name: Check for updates
+  ansible.builtin.shell: |
+    apt list --upgradable
+  register: available_updates
+
+- name: Show count of to update packages
+  ansible.builtin.debug:
+    msg: "{{ ansible_hostname }} has {{ available_updates.results | length }} updates available"
+  when: available_updates.results|length > 0
+
+- name: Post available updates to Slack
+  slack:
+    token: "{{ slack_token }}"
+    msg: "{{ ansible_hostname  }} has {{ available_updates.results|length }} updates available"
+  delegate_to: localhost
+  become: false
+  when: available_updates.results|length > 0 and slack_token is defined
+
+- name: Start updating
+  ansible.builtin.apt:
+    name: '*'
+    state: latest
+    update_cache: true
+  register: installed_updates
+  when: available_updates.results|length > 0 and kernel_update is false
+
+- name: Reboot server if updates were installed
+  block:
+    - name: Reboot the server
+      ansible.builtin.reboot:
+        reboot_timeout: 600
+
+    - name: Wait for the server to come back online
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+  when: reboot is defined and reboot is true and installed_updates.changed
+
+...
